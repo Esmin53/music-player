@@ -1,10 +1,11 @@
 import { Appearance, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import * as MediaLibrary from 'expo-media-library';
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors } from "@/constants/Colors";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { ThemeContext } from "@/context/ThemeContext";
 
 
 export default function Index() {
@@ -20,9 +21,8 @@ export default function Index() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [position, setPosition] = useState(0)
 
-  const colorScheme = Appearance.getColorScheme();
+  const {theme, colorScheme, setColorScheme} = useContext(ThemeContext)
 
-  const theme = colorScheme === "dark" ? Colors.dark : Colors.light
 
   const styles = createStyles(theme)
 
@@ -144,6 +144,15 @@ export default function Index() {
     <View
       style={styles.container}
     >
+      <View style={{width: "100%", height: 52, backgroundColor: theme?.background, display: "flex",
+        flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8,
+        borderBottomWidth: 2, borderColor: theme?.main
+      }}>
+          <Text style={{color: theme?.text, fontSize: 18, fontWeight: "600"}}>My Music</Text>
+          <Pressable onPress={() => setColorScheme((prev) => prev === 'dark' ? 'light' : 'dark')}>
+          <Ionicons name={colorScheme === "dark" ? 'sunny' : 'moon'} size={26} color={theme?.text} />
+          </Pressable>
+      </View>
       <SafeAreaView style={{
         flex: 1,
         width: "100%",
@@ -152,23 +161,24 @@ export default function Index() {
         <FlatList 
           data={audioFiles}
           contentContainerStyle={{
-            width: "100%"
+            width: "100%",
+            paddingTop: 8
           }}
           renderItem={({item, index}) => <Pressable style={styles.song}
           onPress={() => playSound({ title: item.filename, uri: item.uri, duration: item.duration, index: index})}>
             <View style={{
               height: 60,
               width: 60,
-              backgroundColor: theme.main,
+              backgroundColor: theme?.main,
               borderRadius: 3,
               display: "flex",
               alignItems: "center",
               justifyContent: "center"
             }}>
                 {item.filename === currentSong?.title ? 
-                <FontAwesome name="volume-up" size={40} color={theme.text} />                
+                <FontAwesome name="volume-up" size={40} color={theme?.text} />                
                 :
-                <Ionicons name="musical-note"  size={40} color={theme.text} />}
+                <Ionicons name="musical-note"  size={40} color={theme?.text} />}
             </View>
             <View style={{
               height: "100%",
@@ -178,12 +188,12 @@ export default function Index() {
               justifyContent: "space-evenly"
             }}>
               <Text style={[styles.text,
-                currentSong?.title === item.filename ? {color: theme.main} : {}
+                currentSong?.title === item.filename ? {color: theme?.main} : {}
               ]} numberOfLines={1} ellipsizeMode="clip">
                 {item.filename}
               </Text>
               <Text style={{
-                color: "#EEEEEE",
+                color: theme?.text,
                 fontSize: 16,
                 fontWeight: "600"
               }}>
@@ -203,7 +213,7 @@ export default function Index() {
           padding: 4
         }}>
             <Text numberOfLines={1} ellipsizeMode="clip"
-            style={{fontSize: 14, color: theme.text, fontWeight: "600"}}>{currentSong?.title}</Text>
+            style={{fontSize: 14, color: theme?.text, fontWeight: "600"}}>{currentSong?.title}</Text>
             <View style={{
               width: "100%",
               display: "flex",
@@ -211,29 +221,29 @@ export default function Index() {
               gap: 8,
               alignItems: "center"
             }}>
-                <View style={{ height: 3, backgroundColor: theme.text}}>
-                  <View style={{height: 3, backgroundColor: theme.main}} />
+                <View style={{ height: 3, backgroundColor: theme?.text}}>
+                  <View style={{height: 3, backgroundColor: theme?.main}} />
                 </View>
-                <Text style={{color: theme.text, fontWeight: "600"}}>{formatDuration(currentSong?.duration!)}</Text>
+                <Text style={{color: theme?.text, fontWeight: "600"}}>{formatDuration(currentSong?.duration!)}</Text>
             </View>
         </View>
       <View style={styles.controls}>
         <Pressable style={styles.button} onPress={handlePrevSong}>
-        <FontAwesome name="fast-backward" size={18} color={theme.main} />
+        <FontAwesome name="fast-backward" size={18} color={theme?.main} />
         </Pressable>
         <View style={styles.button}>
           {
             isPaused ? <Pressable>
-              <FontAwesome name="play" size={18} color={theme.main} 
+              <FontAwesome name="play" size={18} color={theme?.main} 
               onPress={unpauseSound}/>
             </Pressable> :
             <Pressable onPress={pauseSound}>
-              <FontAwesome name="pause" size={18} color={theme.main} />
+              <FontAwesome name="pause" size={18} color={theme?.main} />
             </Pressable>
         }
         </View>
         <Pressable style={styles.button} onPress={handleNextSong}>
-        <FontAwesome name="fast-forward" size={18} color={theme.main} />
+        <FontAwesome name="fast-forward" size={18} color={theme?.main} />
         </Pressable>
       </View>
       </View>
@@ -242,11 +252,11 @@ export default function Index() {
 }
 
 const createStyles = (theme: {
-  text: string,
-  background: string,
-  secondary: string,
-  main: string
-}) => {
+  text: string;
+  background: string;
+  secondary: string;
+  main: string;
+} | null) => {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -255,7 +265,7 @@ const createStyles = (theme: {
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: theme.background
+      backgroundColor: theme?.background
     },
     musicList: {
       display: "flex",
@@ -279,13 +289,15 @@ const createStyles = (theme: {
       width: "100%",
       height: 86,
       marginTop: "auto",
-      backgroundColor: theme.secondary,
+      backgroundColor: theme?.secondary,
       display:"flex",
       flexDirection: "row",
       gap: 24,
       justifyContent: "space-between",
       alignItems: "center",
-      paddingHorizontal: 6
+      paddingHorizontal: 6,
+      borderTopWidth: 2,
+      borderTopColor: theme?.main
     },
     info: {
 
@@ -308,7 +320,7 @@ const createStyles = (theme: {
       alignItems: "center"
     },
     text: {
-      color: theme.text,
+      color: theme?.text,
       fontSize: 16,
     }
   })
