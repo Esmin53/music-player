@@ -6,13 +6,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors } from "@/constants/Colors";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ThemeContext } from "@/context/ThemeContext";
+import { useMusicPlayer } from "@/hooks/useMusicPlayer";
 
 
 export default function Index() {
 
   const [audioFiles, setAudioFiles] = useState<MediaLibrary.Asset[]>([]);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [currentSong, setCurrentSong] = useState<{
+  const [g, setCurrentSongg] = useState<{
     title: string | null,
     uri: string | null,
     duration: number | null
@@ -23,86 +24,12 @@ export default function Index() {
 
   const {theme, colorScheme, setColorScheme} = useContext(ThemeContext)
 
+  const {setCurrentSong, currentSong, setSongs, songs} = useMusicPlayer()
+
 
   const styles = createStyles(theme)
 
-  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      setPosition(status.positionMillis);  
-      console.log('Position:', status.positionMillis); 
-    }
-  };
 
-  const playSound = async ({uri, title, duration, index}: {
-    title: string | null,
-    uri: string | null,
-    duration: number | null
-    index: number | null
-  }) => {
-    if (sound && currentSong?.uri === uri) {
-      await sound.stopAsync();
-      await sound.playFromPositionAsync(0)
-      setIsPaused(false);
-      return
-    } else {
-      if (sound) {
-        await sound.stopAsync();
-      }
-
-      const { sound: newSound, status } = await Audio.Sound.createAsync(
-        { uri: uri! },
-        { shouldPlay: true },
-      );
-
-
-      newSound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-
-      setCurrentSong({ uri, title, duration, index });
-      setSound(newSound);
-      setIsPaused(false);
-
-      await newSound.playAsync();
-    }
-  };
-
-
-  const pauseSound = async () => {
-    if (sound) {
-      await sound.pauseAsync(); 
-      setIsPaused(true);
-    } 
-  };
-  
-  const unpauseSound = async () => {
-    if (sound) {
-      await sound.playAsync(); 
-      setIsPaused(false);
-    } 
-  };
-
-  const handleNextSong = async () => {
-    if(typeof currentSong?.index === "number" && sound) {
-      let index = currentSong.index + 1 === audioFiles.length ? 0 : currentSong.index + 1
-      const nextSong = audioFiles[index]
-
-      playSound({uri: nextSong.uri, title: nextSong.filename, duration: nextSong.duration, index: index})
-    }  
-  }
-  
-  const handlePrevSong = async () => {
-    if(currentSong?.index === 0 && sound && audioFiles.length !== 1) {
-      const nextSong = audioFiles[audioFiles.length - 1]
-
-      playSound({uri: nextSong.uri, title: nextSong.filename, duration: nextSong.duration, index: audioFiles.length - 1})
-      return
-    }
-    if(currentSong?.index && sound) {
-      let index = currentSong.index - 1 <  0 ? audioFiles.length : currentSong.index - 1
-      const nextSong = audioFiles[index]
-
-      playSound({uri: nextSong.uri, title: nextSong.filename, duration: nextSong.duration, index: index})
-    }  
-  }
 
 
   const formatDuration = (durationInSeconds: number | null) => {
@@ -125,6 +52,7 @@ export default function Index() {
         });
 
         setAudioFiles(media.assets);
+        setSongs(media.assets)
       }
     };
 
@@ -159,13 +87,16 @@ export default function Index() {
         paddingHorizontal: 8
       }}>
         <FlatList 
-          data={audioFiles}
+          data={songs}
           contentContainerStyle={{
             width: "100%",
             paddingTop: 8
           }}
           renderItem={({item, index}) => <Pressable style={styles.song}
-          onPress={() => playSound({ title: item.filename, uri: item.uri, duration: item.duration, index: index})}>
+          onPress={() => { 
+            setCurrentSong({title: item.filename, uri: item.uri, duration: item.duration, index: index})
+            //playSound({ title: item.filename, uri: item.uri, duration: item.duration, index: index})
+          }}>
             <View style={{
               height: 60,
               width: 60,
@@ -203,50 +134,6 @@ export default function Index() {
           </Pressable>}
         />
       </SafeAreaView>
-      <View style={styles.footer}>
-        <View style={{
-          flex: 1,
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-evenly",
-          padding: 4
-        }}>
-            <Text numberOfLines={1} ellipsizeMode="clip"
-            style={{fontSize: 14, color: theme?.text, fontWeight: "600"}}>{currentSong?.title}</Text>
-            <View style={{
-              width: "100%",
-              display: "flex",
-              flexDirection: "row",
-              gap: 8,
-              alignItems: "center"
-            }}>
-                <View style={{ height: 3, backgroundColor: theme?.text}}>
-                  <View style={{height: 3, backgroundColor: theme?.main}} />
-                </View>
-                <Text style={{color: theme?.text, fontWeight: "600"}}>{formatDuration(currentSong?.duration!)}</Text>
-            </View>
-        </View>
-      <View style={styles.controls}>
-        <Pressable style={styles.button} onPress={handlePrevSong}>
-        <FontAwesome name="fast-backward" size={18} color={theme?.main} />
-        </Pressable>
-        <View style={styles.button}>
-          {
-            isPaused ? <Pressable>
-              <FontAwesome name="play" size={18} color={theme?.main} 
-              onPress={unpauseSound}/>
-            </Pressable> :
-            <Pressable onPress={pauseSound}>
-              <FontAwesome name="pause" size={18} color={theme?.main} />
-            </Pressable>
-        }
-        </View>
-        <Pressable style={styles.button} onPress={handleNextSong}>
-        <FontAwesome name="fast-forward" size={18} color={theme?.main} />
-        </Pressable>
-      </View>
-      </View>
     </View>
   );
 }
@@ -284,30 +171,6 @@ const createStyles = (theme: {
       gap: 8,
       alignItems: "center",
       marginBottom: 4,
-    },
-    footer: {
-      width: "100%",
-      height: 86,
-      marginTop: "auto",
-      backgroundColor: theme?.secondary,
-      display:"flex",
-      flexDirection: "row",
-      gap: 24,
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: 6,
-      borderTopWidth: 2,
-      borderTopColor: theme?.main
-    },
-    info: {
-
-    },
-    controls: {
-      display:"flex",
-      flexDirection: "row",
-      gap: 8,
-      justifyContent: "center",
-      alignItems: "center"
     },
     button: {
       width: 40,

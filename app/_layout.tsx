@@ -1,3 +1,4 @@
+import MusicPlayer from "@/components/MusicPlayer";
 import { ThemeContextProvider } from "@/context/ThemeContext";
 import { Stack } from "expo-router";
 
@@ -7,6 +8,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false}}/>
       </Stack>
+      <MusicPlayer />
     </ThemeContextProvider>
 
   );
