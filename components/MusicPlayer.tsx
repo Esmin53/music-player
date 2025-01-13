@@ -9,8 +9,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 const MusicPlayer = () => {
     const [isPaused, setIsPaused] = useState(false)
     const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-    const {theme ,colorScheme, setColorScheme} = useContext(ThemeContext)
+    const {theme } = useContext(ThemeContext)
 
     const {currentSong, setCurrentSong, songs} = useMusicPlayer()
 

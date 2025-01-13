@@ -1,9 +1,8 @@
-import { Appearance, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import * as MediaLibrary from 'expo-media-library';
 import { useContext, useEffect, useState } from "react";
-import { Audio, AVPlaybackStatus } from 'expo-av';
+import { Audio } from 'expo-av';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from "@/constants/Colors";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { ThemeContext } from "@/context/ThemeContext";
 import { useMusicPlayer } from "@/hooks/useMusicPlayer";
@@ -11,26 +10,14 @@ import { useMusicPlayer } from "@/hooks/useMusicPlayer";
 
 export default function Index() {
 
-  const [audioFiles, setAudioFiles] = useState<MediaLibrary.Asset[]>([]);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [g, setCurrentSongg] = useState<{
-    title: string | null,
-    uri: string | null,
-    duration: number | null
-    index: number | null
-  } | null>(null)
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [position, setPosition] = useState(0)
-
+  const [permision, setPermission] = useState(false)
   const {theme, colorScheme, setColorScheme} = useContext(ThemeContext)
 
   const {setCurrentSong, currentSong, setSongs, songs} = useMusicPlayer()
 
 
   const styles = createStyles(theme)
-
-
-
 
   const formatDuration = (durationInSeconds: number | null) => {
     if(!durationInSeconds) return
@@ -43,16 +30,22 @@ export default function Index() {
     return `${minutes}:${formattedSeconds}`;
   };
 
+
   useEffect(() => {
     const fetchAudioFiles = async () => {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status === 'granted') {
+        setPermission(true);
+
         const media = await MediaLibrary.getAssetsAsync({
-          mediaType: 'audio',
+          mediaType: 'audio', 
+          first: 400,
+          sortBy: "creationTime"
         });
 
-        setAudioFiles(media.assets);
-        setSongs(media.assets)
+        setSongs(media.assets.reverse())
+      } else {
+        console.log('Permission denied');
       }
     };
 
@@ -72,7 +65,7 @@ export default function Index() {
     <View
       style={styles.container}
     >
-      <View style={{width: "100%", height: 52, backgroundColor: theme?.background, display: "flex",
+      <View style={{width: "100%", height: 60, backgroundColor: theme?.background, display: "flex",
         flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8,
         borderBottomWidth: 2, borderColor: theme?.main
       }}>
@@ -147,7 +140,6 @@ const createStyles = (theme: {
   return StyleSheet.create({
     container: {
       flex: 1,
-      paddingTop: 40,
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
